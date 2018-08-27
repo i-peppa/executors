@@ -1,0 +1,73 @@
+#package executors
+
+import (
+	"net/http"
+	"git.wemomo.com/go/executors/gpool"
+	"time"
+	"fmt"
+	"strconv"
+)
+
+var K = 1
+
+
+//开启1000个协程
+var t = gpool.NewExecutors(1000)
+
+func main() {
+	test()
+}
+
+
+/**
+10个请求
+ */
+func test() {
+	c := t.NewExecutor()
+
+	var loadkey string
+
+	for i:=0; i<520; i++ {
+		loadkey = c.Execute(a, strconv.Itoa(i))
+	}
+
+	//等待执行完
+	c.WaitTimeout(time.Millisecond * 100000)
+
+
+	fmt.Println(c.Fetch(loadkey))
+}
+
+
+/**
+1000个请求：100个executor,每个执行10个请求
+ */
+func test1() {
+	var loadkey string
+	for i:=0; i<100; i++ {
+		go func(i int) {
+
+			c := t.NewExecutor()
+
+			for i:=0; i<10; i++ {
+				loadkey = c.Execute(a, strconv.Itoa(i))
+			}
+
+			//等待执行完
+			c.WaitTimeout(time.Second*100)
+
+			fmt.Println(c.Fetch(loadkey))
+		}(i)
+	}
+
+
+
+	time.Sleep(time.Second * 100)
+}
+
+
+func a(param ...interface{}) interface{} {
+	//fmt.Println("start", time.Now().Second())
+	rep, _ := http.Get("http://www.baidu.com")
+	return rep
+}
